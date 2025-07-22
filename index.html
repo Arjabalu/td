@@ -1,0 +1,387 @@
+<script type="text/javascript">
+        var gk_isXlsx = false;
+        var gk_xlsxFileLookup = {};
+        var gk_fileData = {};
+        function filledCell(cell) {
+          return cell !== '' && cell != null;
+        }
+        function loadFileData(filename) {
+        if (gk_isXlsx && gk_xlsxFileLookup[filename]) {
+            try {
+                var workbook = XLSX.read(gk_fileData[filename], { type: 'base64' });
+                var firstSheetName = workbook.SheetNames[0];
+                var worksheet = workbook.Sheets[firstSheetName];
+
+                // Convert sheet to JSON to filter blank rows
+                var jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1, blankrows: false, defval: '' });
+                // Filter out blank rows (rows where all cells are empty, null, or undefined)
+                var filteredData = jsonData.filter(row => row.some(filledCell));
+
+                // Heuristic to find the header row by ignoring rows with fewer filled cells than the next row
+                var headerRowIndex = filteredData.findIndex((row, index) =>
+                  row.filter(filledCell).length >= filteredData[index + 1]?.filter(filledCell).length
+                );
+                // Fallback
+                if (headerRowIndex === -1 || headerRowIndex > 25) {
+                  headerRowIndex = 0;
+                }
+
+                // Convert filtered JSON back to CSV
+                var csv = XLSX.utils.aoa_to_sheet(filteredData.slice(headerRowIndex)); // Create a new sheet from filtered array of arrays
+                csv = XLSX.utils.sheet_to_csv(csv, { header: 1 });
+                return csv;
+            } catch (e) {
+                console.error(e);
+                return "";
+            }
+        }
+        return gk_fileData[filename] || "";
+        }
+        </script><!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pilgrim Survey - Central Reception Office, Tirumala</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            margin: 0;
+            padding: 20px;
+            color: #333;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            text-align: center;
+            color: #4CAF50;
+        }
+        h2 {
+            font-size: 1.2em;
+            margin-top: 20px;
+            color: #333;
+        }
+        label {
+            display: block;
+            margin: 10px 0 5px;
+            font-weight: bold;
+        }
+        input[type="radio"], input[type="checkbox"] {
+            margin-right: 10px;
+        }
+        input[type="text"], input[type="time"], input[type="number"], select {
+            width: 100%;
+            padding: 8px;
+            margin-bottom: 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+        button {
+            background-color: #4CAF50;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            display: block;
+            margin: 20px auto;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        .section {
+            margin-bottom: 20px;
+        }
+        .note {
+            font-style: italic;
+            text-align: center;
+            color: #555;
+        }
+        @media (max-width: 600px) {
+            .container {
+                padding: 10px;
+            }
+            button {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Pilgrim Survey - Central Reception Office, Tirumala</h1>
+        <p class="note">Thank you for visiting Tirumala Tirupati Devasthanams. This short survey (3–5 minutes) will help us improve services at the CRO. Your responses are anonymous.</p>
+
+        <form id="pilgrimSurvey" action="/submit" method="post">
+            <!-- Section 1: Basic Information -->
+            <div class="section">
+                <h2>Section 1: Basic Information</h2>
+                <label>1. Age Group</label>
+                <input type="radio" name="age_group" value="below_18" required> Below 18<br>
+                <input type="radio" name="age_group" value="18_24"> 18–24<br>
+                <input type="radio" name="age_group" value="25_44"> 25–44<br>
+                <input type="radio" name="age_group" value="45_64"> 45–64<br>
+                <input type="radio" name="age_group" value="65_above"> 65 and above<br>
+
+                <label>2. Place of Residence</label>
+                <select name="residence" required>
+                    <option value="">Select an option</option>
+                    <option value="andhra_pradesh">Andhra Pradesh</option>
+                    <option value="other_indian_state">Other Indian State</option>
+                    <option value="outside_india">Outside India</option>
+                </select>
+                <input type="text" name="residence_specify" placeholder="Specify state/country (if applicable)" style="display: none;" id="residence_specify">
+
+                <label>3. Who are you traveling with?</label>
+                <input type="radio" name="travel_companions" value="alone" required> Alone<br>
+                <input type="radio" name="travel_companions" value="friends"> Friends<br>
+                <input type="radio" name="travel_companions" value="family"> Family<br>
+
+                <div id="group_details" style="display: none;">
+                    <label>3a. How many members came to Darshan?</label>
+                    <input type="number" name="group_size" min="1" placeholder="Enter number of members" id="group_size">
+
+                    <label>3b. Where were they waiting?</label>
+                    <input type="radio" name="waiting_location" value="cro_premises"> CRO Premises<br>
+                    <input type="radio" name="waiting_location" value="others"> Others
+                    <input type="text" name="waiting_location_specify" placeholder="Specify other location" style="display: none;" id="waiting_location_specify">
+                </div>
+
+                <label>4. Got the accommodation?</label>
+                <input type="radio" name="accommodation" value="yes" required> Yes<br>
+                <input type="radio" name="accommodation" value="no"> No<br>
+
+                <div id="no_accommodation_details" style="display: none;">
+                    <label>4a. Where are you planning to stay?</label>
+                    <input type="radio" name="planned_stay" value="cro_premises"> CRO Premises<br>
+                    <input type="radio" name="planned_stay" value="others"> Others
+                    <input type="text" name="planned_stay_specify" placeholder="Specify other location" style="display: none;" id="planned_stay_specify">
+                </div>
+            </div>
+
+            <!-- Section 2: Activity and Time Spent -->
+            <div class="section">
+                <h2>Section 2: Activity and Time Spent</h2>
+                <label>5. Why did you come to CRO?</label>
+                <input type="radio" name="visit_purpose" value="enquiry" required> Enquiry<br>
+                <input type="radio" name="visit_purpose" value="online_booking"> Online Booking<br>
+                <input type="radio" name="visit_purpose" value="lucky_dip"> Lucky Dip<br>
+                <input type="radio" name="visit_purpose" value="accommodation_enquiry"> Accommodation Enquiry<br>
+
+                <label>6. Primary Activity at CRO</label>
+                <select name="primary_activity" required>
+                    <option value="">Select an activity</option>
+                    <optgroup label="Darshan & Seva Related">
+                        <option value="sevadarshan_queue">Sevadarshan Queue</option>
+                        <option value="current_booking_daily">Current Booking – Daily Ticketed Entries</option>
+                        <option value="seva_dip_allocations">Seva Dip Allocations</option>
+                        <option value="advance_booking">Advance Booking (pre-booked darshan)</option>
+                        <option value="current_booking_walkin">Current Booking – Walk-in</option>
+                        <option value="vip_special_access">VIP/VVIP & Special Accommodations / Arjitha Seva</option>
+                    </optgroup>
+                    <optgroup label="Accommodation Related">
+                        <option value="donor_scheme_accommodation">Donor Scheme Accommodation</option>
+                        <option value="floating_crowd">Floating Crowd (waiting without confirmed booking)</option>
+                        <option value="temporary_waiting_east">Temporary Waiting Area East of CRO</option>
+                        <option value="formal_waiting_area">Waiting Area (formal CRO waiting halls)</option>
+                        <option value="cro_admin_entry">Entry to CRO Administration Block</option>
+                    </optgroup>
+                    <optgroup label="Food and Utility Services">
+                        <option value="annaprasadam">Annaprasadam (free meal service)</option>
+                        <option value="food_stalls">Food Stalls (paid food counters/vendors)</option>
+                        <option value="toilets">Toilets (public sanitation facilities)</option>
+                        <option value="atm">ATM (cash withdrawal)</option>
+                        <option value="railway_reservation">Railway Reservation Counters</option>
+                    </optgroup>
+                    <optgroup label="Local Governance and Administration">
+                        <option value="panchayat_staff_movement">Panchayat Office Staff Movement</option>
+                        <option value="panchayat_visitors">Panchayat Office Visitors (civic issues)</option>
+                        <option value="scanning_machines">Scanning Machines (security check)</option>
+                    </optgroup>
+                </select>
+
+                <label>7. Time Spent on Activity</label>
+                <label>a. Arrival Time at CRO</label>
+                <input type="time" name="arrival_time" required placeholder="e.g., 06:30 AM">
+
+                <label>b. Waiting Time (in queue or waiting area)</label>
+                <input type="radio" name="waiting_time" value="less_15" required> Less than 15 min<br>
+                <input type="radio" name="waiting_time" value="15_30"> 15–30 min<br>
+                <input type="radio" name="waiting_time" value="30_60"> 30–60 min<br>
+                <input type="radio" name="waiting_time" value="more_60"> More than 60 min
+                <input type="text" name="waiting_time_specify" placeholder="Specify minutes (if >60)" style="display: none;" id="waiting_time_specify">
+
+                <label>c. Service Time (time to complete task, e.g., room allotment)</label>
+                <input type="radio" name="service_time" value="less_15" required> Less than 15 min<br>
+                <input type="radio" name="service_time" value="15_30"> 15–30 min<br>
+                <input type="radio" name="service_time" value="30_60"> 30–60 min<br>
+                <input type="radio" name="service_time" value="more_60"> More than 60 min
+                <input type="text" name="service_time_specify" placeholder="Specify minutes (if >60)" style="display: none;" id="service_time_specify">
+
+                <label>8. Total Time Spent at CRO (from arrival to leaving)</label>
+                <input type="radio" name="total_time" value="less_30" required> Less than 30 min<br>
+                <input type="radio" name="total_time" value="30_60"> 30–60 min<br>
+                <input type="radio" name="total_time" value="1_2_hours"> 1–2 hours<br>
+                <input type="radio" name="total_time" value="2_4_hours"> 2–4 hours<br>
+                <input type="radio" name="total_time" value="more_4_hours"> More than 4 hours
+            </div>
+
+            <!-- Section 3: Additional Feedback -->
+            <div class="section">
+                <h2>Section 3: Additional Feedback</h2>
+                <label>9. Challenges Faced (select all that apply)</label>
+                <input type="checkbox" name="challenges" value="long_queues"> Long queues<br>
+                <input type="checkbox" name="challenges" value="lack_information"> Lack of clear information<br>
+                <input type="checkbox" name="challenges" value="congestion"> Congestion<br>
+                <input type="checkbox" name="challenges" value="insufficient_amenities"> Insufficient amenities (e.g., seating, water)<br>
+                <input type="checkbox" name="challenges" value="other"> Other
+                <input type="text" name="challenges_other" placeholder="Specify other challenges" style="display: none;" id="challenges_other">
+
+                <label>10. Suggestions for Improvement (optional)</label>
+                <textarea name="suggestions" rows="4" placeholder="Your suggestions to improve CRO services"></textarea>
+            </div>
+
+            <button type="submit">Submit Survey</button>
+        </form>
+        <p class="note">Thank you for your valuable input. Your feedback will enhance the pilgrim experience at Tirumala.</p>
+    </div>
+
+    <script>
+        // Generic function to toggle specify fields
+        function toggleSpecifyField(trigger, targetId, condition) {
+            const target = document.getElementById(targetId);
+            target.style.display = condition() ? 'block' : 'none';
+        }
+
+        // Residence specify field
+        document.querySelector('select[name="residence"]').addEventListener('change', function() {
+            toggleSpecifyField(this, 'residence_specify', () => this.value === 'other_indian_state' || this.value === 'outside_india');
+        });
+
+        // Travel companions and conditional fields
+        document.querySelectorAll('input[name="travel_companions"]').forEach(input => {
+            input.addEventListener('change', function() {
+                toggleSpecifyField(this, 'group_details', () => this.value === 'friends' || this.value === 'family');
+            });
+        });
+
+        // Waiting location specify field
+        document.querySelectorAll('input[name="waiting_location"]').forEach(input => {
+            input.addEventListener('change', function() {
+                toggleSpecifyField(this, 'waiting_location_specify', () => this.value === 'others');
+            });
+        });
+
+        // Accommodation and planned stay fields
+        document.querySelectorAll('input[name="accommodation"]').forEach(input => {
+            input.addEventListener('change', function() {
+                toggleSpecifyField(this, 'no_accommodation_details', () => this.value === 'no');
+            });
+        });
+
+        // Planned stay specify field
+        document.querySelectorAll('input[name="planned_stay"]').forEach(input => {
+            input.addEventListener('change', function() {
+                toggleSpecifyField(this, 'planned_stay_specify', () => this.value === 'others');
+            });
+        });
+
+        // Waiting time specify field
+        document.querySelectorAll('input[name="waiting_time"]').forEach(input => {
+            input.addEventListener('change', function() {
+                toggleSpecifyField(this, 'waiting_time_specify', () => this.value === 'more_60');
+            });
+        });
+
+        // Service time specify field
+        document.querySelectorAll('input[name="service_time"]').forEach(input => {
+            input.addEventListener('change', function() {
+                toggleSpecifyField(this, 'service_time_specify', () => this.value === 'more_60');
+            });
+        });
+
+        // Challenges specify field
+        document.querySelectorAll('input[name="challenges"]').forEach(input => {
+            input.addEventListener('change', function() {
+                toggleSpecifyField(this, 'challenges_other', () => document.querySelector('input[value="other"]').checked);
+            });
+        });
+
+        // Basic form validation
+        document.getElementById('pilgrimSurvey').addEventListener('submit', function(event) {
+            const residence = document.querySelector('select[name="residence"]').value;
+            const residenceSpecify = document.getElementById('residence_specify').value;
+            const travelCompanions = document.querySelector('input[name="travel_companions"]:checked')?.value;
+            const groupSize = document.getElementById('group_size')?.value;
+            const waitingLocation = document.querySelector('input[name="waiting_location"]:checked')?.value;
+            const waitingLocationSpecify = document.getElementById('waiting_location_specify')?.value;
+            const accommodation = document.querySelector('input[name="accommodation"]:checked')?.value;
+            const plannedStay = document.querySelector('input[name="planned_stay"]:checked')?.value;
+            const plannedStaySpecify = document.getElementById('planned_stay_specify')?.value;
+
+            if ((residence === 'other_indian_state' || residence === 'outside_india') && !residenceSpecify) {
+                alert('Please specify your state or country.');
+                event.preventDefault();
+                return;
+            }
+            if ((travelCompanions === 'friends' || travelCompanions === 'family') && !groupSize) {
+                alert('Please specify the number of members for Darshan.');
+                event.preventDefault();
+                return;
+            }
+            if ((travelCompanions === 'friends' || travelCompanions === 'family') && !waitingLocation) {
+                alert('Please specify where the group was waiting.');
+                event.preventDefault();
+                return;
+            }
+            if (waitingLocation === 'others' && !waitingLocationSpecify) {
+                alert('Please specify the other waiting location.');
+                event.preventDefault();
+                return;
+            }
+            if (accommodation === 'no' && !plannedStay) {
+                alert('Please specify where you are planning to stay.');
+                event.preventDefault();
+                return;
+            }
+            if (plannedStay === 'others' && !plannedStaySpecify) {
+                alert('Please specify the other planned stay location.');
+                event.preventDefault();
+                return;
+            }
+        });
+        const scriptURL = 'https://script.google.com/macros/s/AKfycbwqDaJL7wWxJL2y5jteMtEVZRy-EdlZg3pRJxM4kU5A6Fka_arZfsLz40-dXkxIJ8Ly/exec'; // Replace with the Google Apps Script Web App URL
+        const form = document.forms['submit-to-google-sheet'];
+
+        form.addEventListener('submit', e => {
+            e.preventDefault();
+            // Handle multiple checkbox selections
+            const checkboxes = form.querySelectorAll('input[name="challenges"]:checked');
+            const challenges = Array.from(checkboxes).map(cb => cb.value).join(', ');
+            const formData = new FormData(form);
+            formData.set('challenges', challenges);
+
+            fetch(scriptURL, { method: 'POST', body: formData })
+                .then(response => {
+                    if (response.ok) {
+                        alert('Thank you for your submission!');
+                        form.reset();
+                    } else {
+                        throw new Error('Network response was not ok.');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('There was an error submitting your form. Please try again.');
+                });
+        });
+    </script>
+</body>
+</html>
